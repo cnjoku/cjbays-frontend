@@ -1,6 +1,10 @@
-export async function fetchGraphQL(query: string, variables = {}) {
+export async function fetchGraphQL(
+  query: string,
+  variables = {},
+  revalidate = 60
+) {
   const res = await fetch(
-    process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!,
+    process.env.WORDPRESS_GRAPHQL_ENDPOINT!,
     {
       method: "POST",
       headers: {
@@ -10,14 +14,20 @@ export async function fetchGraphQL(query: string, variables = {}) {
         query,
         variables,
       }),
-      next: { revalidate: 60 }, // ISR (optional)
+      next: { revalidate },
     }
   );
 
   if (!res.ok) {
-    throw new Error("Failed to fetch GraphQL");
+    throw new Error("GraphQL request failed");
   }
 
   const json = await res.json();
+
+  if (json.errors) {
+    console.error(json.errors);
+    throw new Error("GraphQL error");
+  }
+
   return json.data;
 }
